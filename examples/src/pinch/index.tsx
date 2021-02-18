@@ -7,7 +7,7 @@ import styles from './styles.css'
 // document.addEventListener('gesturechange', e => e.preventDefault())
 
 export default function Pinch() {
-  const [style, set] = useSpring(() => ({ x: 0, y: 0, rotateZ: 0, scale: 1 }))
+  const [{ scale1, ...style }, set] = useSpring(() => ({ x: 0, y: 0, rotateZ: 0, scale: 1, scale1: 1 }))
   const domTarget = React.useRef(null)
 
   useGesture(
@@ -15,22 +15,29 @@ export default function Pinch() {
       onDrag: ({ offset: [x, y] }) => {
         set({ x, y })
       },
-      onPinch: ({ values, movement: [d, a] }) => {
-        set({ scale: 1 + d / 260, rotateZ: a })
+      onPinch: ({ event, initial: [id], da: [d], offset: [, a], memo = [style.scale.get(), scale1.get()] }) => {
+        const scale = event.scale ? memo[0] * event.scale : memo[0]
+        const scale1 = (memo[1] * d) / id
+        // console.log(event.scale)
+        set({ scale1, scale, rotateZ: a })
+        return memo
       },
     },
     {
       domTarget,
       eventOptions: { passive: false },
-      pinch: {
-        initial: () => [(style.scale.get() - 1) * 260, style.rotateZ.get()],
-      },
+      // pinch: {
+      //   initial: () => [(style.scale.get() - 1) * 260, style.rotateZ.get()],
+      // },
     }
   )
 
   return (
     <div className={`${styles.simple} flex`}>
       <animated.div ref={domTarget} style={style} />
+      <animated.div
+        style={{ scale: scale1, position: 'absolute', pointerEvents: 'none', opacity: 0.5, background: 'blue' }}
+      />
     </div>
   )
 }

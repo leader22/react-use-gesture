@@ -10,9 +10,6 @@ import {
 import { getStartGestureState, getGenericPayload } from './Recognizer'
 import { addBindings, addEventIds, removeEventIds } from '../Controller'
 
-const ZOOM_CONSTANT = 7
-const WEBKIT_DISTANCE_SCALE_FACTOR = 260
-
 export class PinchRecognizer extends DistanceAngleRecognizer<'pinch'> {
   readonly ingKey = 'pinching'
   readonly stateKey = 'pinch'
@@ -136,8 +133,6 @@ export class PinchRecognizer extends DistanceAngleRecognizer<'pinch'> {
     // this normalizes the values of the Safari's WebKitEvent by calculating
     // the delta and then multiplying it by a constant.
     const values = getWebkitGestureEventValues(event, this.transform)
-    values[0] =
-      (values[0] - (this.state.event as WebKitGestureEvent).scale) * WEBKIT_DISTANCE_SCALE_FACTOR + this.state.values[0]
 
     const kinematics = this.getKinematics(values, event)
 
@@ -174,17 +169,17 @@ export class PinchRecognizer extends DistanceAngleRecognizer<'pinch'> {
     const [, delta_d] = getWheelEventValues(event, this.transform)
     const {
       values: [prev_d, prev_a],
+      initial: [i_d],
     } = this.state
-    // ZOOM_CONSTANT is based on Safari trackpad natural zooming
-    const _delta_d = -delta_d * ZOOM_CONSTANT
+
     // new distance is the previous state distance added to the delta
-    const d = prev_d + _delta_d
+    const d = Math.max(i_d / 6, prev_d - delta_d)
     const a = prev_a !== void 0 ? prev_a : 0
 
     return {
       values: [d, a] as Vector2,
       origin: [event.clientX, event.clientY] as Vector2,
-      delta: [_delta_d, a] as Vector2,
+      delta: [-delta_d, a] as Vector2,
     }
   }
 
@@ -197,6 +192,7 @@ export class PinchRecognizer extends DistanceAngleRecognizer<'pinch'> {
   }
 
   onWheelStart = (event: React.WheelEvent | WheelEvent): void => {
+    this.state.values[0] = this.state.values[0] || 60
     const { values, delta, origin } = this.getWheelValuesFromEvent(event)
 
     if (event.cancelable) event.preventDefault()

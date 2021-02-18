@@ -29,26 +29,15 @@ export default function Two() {
     }
   )
 
-  const bind2 = useGesture(
-    {
-      onDrag: ({ _pointerId, down, offset: [x, y] }) => {
-        // set2({ scale: down ? 1.2 : 1, x, y })
-      },
-      onPinch: ({ movement: [d, a], turns, touches }) => {
-        // console.log({ d, a, turns, touches })
-        set2({ scale: d / 100, rotateZ: a })
-      },
+  const bind2 = useGesture({
+    onDrag: ({ _pointerId, down, offset: [x, y] }) => {
+      // set2({ scale: down ? 1.2 : 1, x, y })
     },
-    {
-      pinch: {
-        initial: () => {
-          console.log('Initial movement angle', style2.rotateZ.get())
-          console.log('Initial movement distance', 100 * style2.scale.get())
-          return [100 * style2.scale.get(), style2.rotateZ.get()]
-        },
-      },
-    }
-  )
+    onPinch: ({ da: [d], offset: [, a], initial: [id], memo = style2.scale.get() }) => {
+      set2({ scale: (memo * d) / id, rotateZ: a })
+      return memo
+    },
+  })
 
   return (
     <div className="flex">
